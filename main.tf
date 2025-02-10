@@ -55,7 +55,7 @@ output "capacity_providers" {
 }
 
 module "service" {
-  source  = "mergermarket/load-balanced-ecs-service-no-target-group/acuris"
+  source  = "ION-Analytics/load-balanced-ecs-service-no-target-group/acuris"
   version = "2.6.0"
 
   name                                  = local.full_service_name
@@ -73,6 +73,7 @@ module "service" {
   pack_and_distinct                     = var.pack_and_distinct
   health_check_grace_period_seconds     = var.health_check_grace_period_seconds
   capacity_providers                    = local.capacity_providers
+  service_type                          = "service"
 }
 
 module "taskdef" {
