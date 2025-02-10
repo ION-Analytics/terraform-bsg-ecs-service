@@ -55,8 +55,8 @@ output "capacity_providers" {
 }
 
 module "service" {
-  source  = "ION-Analytics/load-balanced-ecs-service-no-target-group/acuris"
-  version = "2.6.0"
+  source  = "ION-Analytics/load-balanced-ecs-service-no-target-group/bsg"
+  version = "2.6.1"
 
   name                                  = local.full_service_name
   cluster                               = var.ecs_cluster
