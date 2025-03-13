@@ -10,17 +10,6 @@ locals {
   })
 }
 
-module "ecs_update_monitor" {
-  source  = "mergermarket/ecs-update-monitor/acuris"
-  version = "2.3.5"
-
-  cluster = var.ecs_cluster
-  service = module.service.name
-  taskdef = module.taskdef.arn
-  is_test = var.is_test
-  timeout = var.deployment_timeout
-}
-
 locals {
   p = var.spot_capacity_percentage <= 50 ? var.spot_capacity_percentage : 100 - var.spot_capacity_percentage
   lower_weight = ceil(local.p / 100)
@@ -55,8 +44,7 @@ output "capacity_providers" {
 }
 
 module "service" {
-  source  = "ION-Analytics/load-balanced-ecs-service-no-target-group/bsg"
-  version = "2.6.2"
+  source  = "./service"
 
   name                                  = local.full_service_name
   cluster                               = var.ecs_cluster
@@ -73,12 +61,10 @@ module "service" {
   pack_and_distinct                     = var.pack_and_distinct
   health_check_grace_period_seconds     = var.health_check_grace_period_seconds
   capacity_providers                    = local.capacity_providers
-  service_type                          = "service"
 }
 
 module "taskdef" {
-  source  = "mergermarket/task-definition-with-task-role/acuris"
-  version = "2.4.0"
+  source  = "./task-definition"
 
   family                = local.full_service_name
   container_definitions = [module.service_container_definition.rendered]
@@ -94,8 +80,7 @@ module "taskdef" {
 }
 
 module "service_container_definition" {
-  source  = "mergermarket/ecs-container-definition/acuris"
-  version = "2.3.1"
+  source  = "./container-definition"
 
   name                = "${var.release["component"]}${var.name_suffix}"
   image               = var.image_id != "" ? var.image_id : var.release["image_id"]
