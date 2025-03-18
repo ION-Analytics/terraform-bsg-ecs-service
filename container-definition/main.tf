@@ -20,6 +20,34 @@ locals {
   ]
 
   final_secrets = flatten(flatten([local.sorted_application_secrets, local.sorted_platform_secrets]))
+
+  container_env = ""
+
+  container-def = jsonencode( {
+    name = var.name
+    essential = true
+    image = var.image
+    portMappings = var.port_mappings
+    cpu = var.cpu
+    privileged = var.privileged
+    memory = var.memory
+    stop_timeout = var.stop_timeout  
+    command = jsonencode(var.command)
+    environment = local.container_env
+    secrets = local.final_secrets
+    dockerLabels = jsonencode(var.labels)
+    ulimits = [
+      {
+        name = "nofile"
+        softLimit = var.nofile_soft_ulimit
+        hardLimit = 65535
+      }
+    ]
+    linuxParameters = {
+      initProcessEnabled = true
+    }
+    extraHosts = local.extra_hosts
+  })
 }
 
 output "final_secrets_debug" {
@@ -38,28 +66,32 @@ output "final_secrets_debug" {
 
 
 
-data "template_file" "container_definitions" {
-  template = file("${path.module}/container_definition.json.tmpl")
 
-  vars = {
-    image                    = var.image
-    container_name           = var.name
-    port_mappings            = var.port_mappings == "" ? format("[ { \"containerPort\": %s } ]", var.container_port) : var.port_mappings
-    cpu                      = var.cpu
-    privileged               = var.privileged
-    mem                      = var.memory    
-    stop_timeout             = var.stop_timeout
-    command                  = length(var.command) > 0 ? jsonencode(var.command) : "null"
-    container_env            = data.external.encode_env.result["env"]
-    # secrets                  = local.final_secrets
-    labels                   = jsonencode(var.labels)
-    nofile_soft_ulimit       = var.nofile_soft_ulimit
-    mountpoint_sourceVolume  = lookup(var.mountpoint, "sourceVolume", "none")
-    mountpoint_containerPath = lookup(var.mountpoint, "containerPath", "none")
-    mountpoint_readOnly      = lookup(var.mountpoint, "readOnly", false)
-    extra_hosts              = local.extra_hosts == "[]" ? "null" : local.extra_hosts
-  }
-}
+
+
+
+# data "template_file" "container_definitions" {
+#   template = file("${path.module}/container_definition.json.tmpl")
+
+#   vars = {
+#     image                    = var.image
+#     container_name           = var.name
+#     port_mappings            = var.port_mappings == "" ? format("[ { \"containerPort\": %s } ]", var.container_port) : var.port_mappings
+#     cpu                      = var.cpu
+#     privileged               = var.privileged
+#     mem                      = var.memory    
+#     stop_timeout             = var.stop_timeout
+#     command                  = length(var.command) > 0 ? jsonencode(var.command) : "null"
+#     container_env            = data.external.encode_env.result["env"]
+#     # secrets                  = local.final_secrets
+#     labels                   = jsonencode(var.labels)
+#     nofile_soft_ulimit       = var.nofile_soft_ulimit
+#     mountpoint_sourceVolume  = lookup(var.mountpoint, "sourceVolume", "none")
+#     mountpoint_containerPath = lookup(var.mountpoint, "containerPath", "none")
+#     mountpoint_readOnly      = lookup(var.mountpoint, "readOnly", false)
+#     extra_hosts              = local.extra_hosts == "[]" ? "null" : local.extra_hosts
+#   }
+# }
 
 data "external" "encode_env" {
   program = ["python", "${path.module}/encode_env.py"]
