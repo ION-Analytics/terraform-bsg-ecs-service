@@ -93,6 +93,10 @@ module "taskdef" {
   tags                  = local.tags
 }
 
+output "final_secrets_debug" {
+  value = module.service_container_definition.final_secrets_debug
+}
+
 module "service_container_definition" {
   source  = "./container-definition"
 

@@ -19,8 +19,13 @@ locals {
     }
   ]
 
-  final_secrets = jsonencode(flatten([local.sorted_application_secrets, local.sorted_platform_secrets]))
+  final_secrets = flatten([local.sorted_application_secrets, local.sorted_platform_secrets])
 }
+
+output "final_secrets_debug" {
+  value = local.final_secrets
+}
+
     # Secrets currently look like
     # + name      = "DUMMY_AWS_SECRET"
     # + valueFrom = "arn:aws:secretsmanager:us-west-2:254076036999:secret:capplatformbsg/sfrazer-test/bsg-hello-world-ecs-example/DUMMY_AWS_SECRET-3OG3jI"
@@ -40,7 +45,7 @@ data "template_file" "container_definitions" {
     stop_timeout             = var.stop_timeout
     command                  = length(var.command) > 0 ? jsonencode(var.command) : "null"
     container_env            = data.external.encode_env.result["env"]
-    secrets                  = local.final_secrets
+    # secrets                  = local.final_secrets
     labels                   = jsonencode(var.labels)
     nofile_soft_ulimit       = var.nofile_soft_ulimit
     mountpoint_sourceVolume  = lookup(var.mountpoint, "sourceVolume", "none")
