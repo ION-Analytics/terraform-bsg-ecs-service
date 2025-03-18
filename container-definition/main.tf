@@ -7,7 +7,7 @@ locals {
     for k, v in var.application_secrets :
     {
       name      = k
-      valueFrom = "arn:aws:secretsmanager:${var.platform_config.config["region"]}:${var.platform_config.config["account_id"]}:secret:${local.team}/${local.env}/${local.component}${v}::"
+      valueFrom = "arn:aws:secretsmanager:${var.platform_config["region"]}:${var.platform_config["account_id"]}:secret:${local.team}/${local.env}/${local.component}${v}::"
     }
   ]
 
@@ -15,7 +15,7 @@ locals {
     for k, v in var.platform_secrets :
     {
       name      = k
-      valueFrom = "arn:aws:secretsmanager:${var.platform_config.config["region"]}:${var.platform_config.config["account_id"]}:secret:platform_secrets/${v}::"
+      valueFrom = "arn:aws:secretsmanager:${var.platform_config["region"]}:${var.platform_config["account_id"]}:secret:platform_secrets/${v}::"
     }
   ]
 
