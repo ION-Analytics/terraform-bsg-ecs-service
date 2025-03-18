@@ -6,7 +6,7 @@ locals {
   sorted_application_secrets = [
     for k, v in data.aws_secretsmanager_secret.secret :
     {
-      name      = "${v.name}"
+      name      = element(split("/",v.name),4)
       valueFrom = "${v.arn}"
     }
   ]
@@ -28,8 +28,8 @@ output "final_secrets_debug" {
 
   # + final_secrets_debug = [
   #     + {
-  #         + name      = "DUMMY_AWS_SECRET"
-  #         + valueFrom = "arn:aws:secretsmanager:us-west-2:254076036999:secret:capplatformbsg/sfrazer-test/bsg-hello-world-ecs-example/DUMMY_AWS_SECRET::"
+  #         + name      = "capplatformbsg/sfrazer-test/bsg-hello-world-ecs-example/DUMMY_AWS_SECRET"
+  #         + valueFrom = "arn:aws:secretsmanager:us-west-2:254076036999:secret:capplatformbsg/sfrazer-test/bsg-hello-world-ecs-example/DUMMY_AWS_SECRET-3OG3jI"
   #       },
   #   ]
 
