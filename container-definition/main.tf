@@ -6,7 +6,7 @@ locals {
   sorted_application_secrets = [
     for k, v in data.aws_secretsmanager_secret.secret :
     {
-      name      = element(split("/",v.name),4)
+      name      = element(split("/",v.name),3)
       valueFrom = "${v.arn}"
     }
   ]
