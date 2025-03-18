@@ -19,20 +19,18 @@ locals {
     }
   ]
 
-  final_secrets = flatten([local.sorted_application_secrets, local.sorted_platform_secrets])
+  final_secrets = flatten(flatten([local.sorted_application_secrets, local.sorted_platform_secrets]))
 }
 
 output "final_secrets_debug" {
   value = local.final_secrets
 }
-
   # + final_secrets_debug = [
   #     + {
-  #         + name      = "capplatformbsg/sfrazer-test/bsg-hello-world-ecs-example/DUMMY_AWS_SECRET"
+  #         + name      = "DUMMY_AWS_SECRET"
   #         + valueFrom = "arn:aws:secretsmanager:us-west-2:254076036999:secret:capplatformbsg/sfrazer-test/bsg-hello-world-ecs-example/DUMMY_AWS_SECRET-3OG3jI"
   #       },
   #   ]
-
 
     # Secrets target:
     # + name      = "DUMMY_AWS_SECRET"
