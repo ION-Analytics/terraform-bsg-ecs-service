@@ -19,8 +19,7 @@ locals {
     }
   ]
 
-  final_secrets = flatten([local.sorted_application_secrets, local.sorted_platform_secrets])
-
+  final_secrets = jsonencode(flatten([local.sorted_application_secrets, local.sorted_platform_secrets]))
 }
     # Secrets currently look like
     # + name      = "DUMMY_AWS_SECRET"
