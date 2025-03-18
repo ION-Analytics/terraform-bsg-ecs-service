@@ -68,6 +68,12 @@ variable "port_mappings" {
   type        = string
 }
 
+variable "platform_config" {
+  description = "Platform configuration"
+  type        = map(string)
+  default     = {}
+}
+
 variable "application_secrets" {
   type    = list(string)
   default = []

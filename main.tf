@@ -108,6 +108,7 @@ module "service_container_definition" {
   port_mappings       = var.container_port_mappings
   application_secrets = var.application_secrets
   platform_secrets    = var.platform_secrets
+  platform_config     = var.platform_config
 
   container_env = merge(
     {
