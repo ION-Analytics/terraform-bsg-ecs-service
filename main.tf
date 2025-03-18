@@ -77,8 +77,7 @@ module "service" {
 }
 
 module "taskdef" {
-  source  = "mergermarket/task-definition-with-task-role/acuris"
-  version = "2.4.0"
+  source  = "./taskdef"
 
   family                = local.full_service_name
   container_definitions = [module.service_container_definition.rendered]
