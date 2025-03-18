@@ -4,10 +4,10 @@ locals {
   component = lookup(var.labels, "component", "")
   extra_hosts = jsonencode(var.extra_hosts)
   sorted_application_secrets = [
-    for k, v in var.application_secrets :
+    for k, v in data.aws_secretsmanager_secret.secret :
     {
       name      = v
-      valueFrom = "arn:aws:secretsmanager:${var.platform_config["region"]}:${var.platform_config["account_id"]}:secret:${local.team}/${local.env}/${local.component}/${v}::"
+      valueFrom = "${v.arn}"
     }
   ]
 
@@ -26,12 +26,12 @@ output "final_secrets_debug" {
   value = local.final_secrets
 }
 
-    # + final_secrets_debug = [
-    #       + {
-    #           + name      = 0
-    #           + valueFrom = "arn:aws:secretsmanager:us-west-2:254076036999:secret:capplatformbsg/sfrazer-test/bsg-hello-world-ecs-exampleDUMMY_AWS_SECRET::"
-    #         },
-    #     ]
+  # + final_secrets_debug = [
+  #     + {
+  #         + name      = "DUMMY_AWS_SECRET"
+  #         + valueFrom = "arn:aws:secretsmanager:us-west-2:254076036999:secret:capplatformbsg/sfrazer-test/bsg-hello-world-ecs-example/DUMMY_AWS_SECRET::"
+  #       },
+  #   ]
 
 
     # Secrets target:
