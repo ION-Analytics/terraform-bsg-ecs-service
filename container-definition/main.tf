@@ -6,15 +6,15 @@ locals {
   sorted_application_secrets = [
     for k, v in var.application_secrets :
     {
-      name      = k
-      valueFrom = "arn:aws:secretsmanager:${var.platform_config["region"]}:${var.platform_config["account_id"]}:secret:${local.team}/${local.env}/${local.component}${v}::"
+      name      = v
+      valueFrom = "arn:aws:secretsmanager:${var.platform_config["region"]}:${var.platform_config["account_id"]}:secret:${local.team}/${local.env}/${local.component}/${v}::"
     }
   ]
 
   sorted_platform_secrets = [
     for k, v in var.platform_secrets :
     {
-      name      = k
+      name      = v
       valueFrom = "arn:aws:secretsmanager:${var.platform_config["region"]}:${var.platform_config["account_id"]}:secret:platform_secrets/${v}::"
     }
   ]
@@ -26,7 +26,15 @@ output "final_secrets_debug" {
   value = local.final_secrets
 }
 
-    # Secrets currently look like
+    # + final_secrets_debug = [
+    #       + {
+    #           + name      = 0
+    #           + valueFrom = "arn:aws:secretsmanager:us-west-2:254076036999:secret:capplatformbsg/sfrazer-test/bsg-hello-world-ecs-exampleDUMMY_AWS_SECRET::"
+    #         },
+    #     ]
+
+
+    # Secrets target:
     # + name      = "DUMMY_AWS_SECRET"
     # + valueFrom = "arn:aws:secretsmanager:us-west-2:254076036999:secret:capplatformbsg/sfrazer-test/bsg-hello-world-ecs-example/DUMMY_AWS_SECRET-3OG3jI"
 
