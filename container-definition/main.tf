@@ -93,33 +93,33 @@ output "final_secrets_debug" {
 #   }
 # }
 
-data "external" "encode_env" {
-  program = ["python", "${path.module}/encode_env.py"]
+# data "external" "encode_env" {
+#   program = ["python", "${path.module}/encode_env.py"]
 
-  query = {
-    env      = jsonencode(var.container_env)
-    metadata = jsonencode(var.metadata)
-  }
-}
+#   query = {
+#     env      = jsonencode(var.container_env)
+#     metadata = jsonencode(var.metadata)
+#   }
+# }
 
-data "external" "encode_secrets" {
-  program = ["python", "${path.module}/encode_secrets.py"]
+# data "external" "encode_secrets" {
+#   program = ["python", "${path.module}/encode_secrets.py"]
 
-  query = {
-    secrets = jsonencode(
-      zipmap(
-        var.application_secrets,
-        data.aws_secretsmanager_secret.secret.*.arn,
-      ),
-    )
-    common_secrets = jsonencode(
-      zipmap(
-        var.platform_secrets,
-        data.aws_secretsmanager_secret.platform_secrets.*.arn,
-      ),
-    )
-  }
-}
+#   query = {
+#     secrets = jsonencode(
+#       zipmap(
+#         var.application_secrets,
+#         data.aws_secretsmanager_secret.secret.*.arn,
+#       ),
+#     )
+#     common_secrets = jsonencode(
+#       zipmap(
+#         var.platform_secrets,
+#         data.aws_secretsmanager_secret.platform_secrets.*.arn,
+#       ),
+#     )
+#   }
+# }
 
 data "aws_secretsmanager_secret" "secret" {
   count = length(var.application_secrets)
