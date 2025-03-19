@@ -51,7 +51,7 @@ locals {
 }
 
 output "final_secrets_debug" {
-  value = local.final_secrets
+  value = local.container-def
 }
   # + final_secrets_debug = [
   #     + {
