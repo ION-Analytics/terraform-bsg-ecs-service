@@ -80,7 +80,7 @@ module "taskdef" {
   source  = "./taskdef"
 
   family                = local.full_service_name
-  container_definition  = module.service_container_definition.rendered
+  container_definition  = module.service_container_definition
   policy                = var.task_role_policy
   assume_role_policy    = var.assume_role_policy
   volume                = var.taskdef_volume
@@ -92,9 +92,9 @@ module "taskdef" {
   tags                  = local.tags
 }
 
-output "final_secrets_debug" {
-  value = module.service_container_definition.final_secrets_debug
-}
+# output "final_secrets_debug" {
+#   value = module.service_container_definition.final_secrets_debug
+# }
 
 module "service_container_definition" {
   source  = "./container-definition"
