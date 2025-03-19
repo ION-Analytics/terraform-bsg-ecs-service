@@ -80,7 +80,7 @@ module "taskdef" {
   source  = "./taskdef"
 
   family                = local.full_service_name
-  container_definition  = module.service_container_definition.sensitive_json_map_encoded
+  container_definition  = module.service_container_definition.sensitive_json_map_encoded_list
   policy                = var.task_role_policy
   assume_role_policy    = var.assume_role_policy
   volume                = var.taskdef_volume
