@@ -12,7 +12,7 @@ locals {
 module "task_definition" {
   source                = "./task_definition"
   family                = var.family
-  container_definitions = var.container_definitions
+  container_definition = var.container_definition
   task_role_arn         = aws_iam_role.task_role.arn
   execution_role_arn    = aws_iam_role.ecs_tasks_execution_role.arn
   network_mode          = var.network_mode

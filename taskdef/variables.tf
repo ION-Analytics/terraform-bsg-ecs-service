@@ -14,9 +14,9 @@ variable "family" {
   type        = string
 }
 
-variable "container_definitions" {
+variable "container_definition" {
   description = "A list of valid container definitions provided as a single valid JSON document."
-  type        = list(string)
+  type        = string
 }
 
 variable "policy" {

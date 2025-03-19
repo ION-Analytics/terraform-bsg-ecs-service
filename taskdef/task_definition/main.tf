@@ -1,6 +1,6 @@
 resource "aws_ecs_task_definition" "taskdef" {
   family                = var.family
-  container_definitions = flatten(var.container_definitions)
+  container_definitions = var.container_definition
   task_role_arn         = var.task_role_arn
   execution_role_arn    = var.execution_role_arn
   network_mode          = var.network_mode
