@@ -99,35 +99,36 @@ output "final_secrets_debug" {
 module "service_container_definition" {
   source  = "./container-definition"
 
-  name                = "${var.release["component"]}${var.name_suffix}"
-  image               = var.image_id != "" ? var.image_id : var.release["image_id"]
-  cpu                 = var.cpu
+  container_name                = "${var.release["component"]}${var.name_suffix}"
+  container_image               = var.image_id != "" ? var.image_id : var.release["image_id"]
+  container_cpu                 = var.cpu
   privileged          = var.privileged
-  memory              = var.memory
+  container_memory              = var.memory
   stop_timeout        = var.stop_timeout
-  container_port      = var.port
-  nofile_soft_ulimit  = var.nofile_soft_ulimit
-  mountpoint          = var.container_mountpoint
-  port_mappings       = var.container_port_mappings
+  # container_port      = var.port
+#  mountpoint          = var.container_mountpoint
+#  port_mappings       = var.container_port_mappings
   application_secrets = var.application_secrets
   platform_secrets    = var.platform_secrets
   platform_config     = var.platform_config
 
-  container_env = merge(
-    {
-      "LOGSPOUT_CLOUDWATCHLOGS_LOG_GROUP_STDOUT" = "${local.full_service_name}-stdout"
-      "LOGSPOUT_CLOUDWATCHLOGS_LOG_GROUP_STDERR" = "${local.full_service_name}-stderr"
-      "STATSD_HOST"                              = "172.17.42.1"
-      "STATSD_PORT"                              = "8125"
-      "STATSD_ENABLED"                           = "true"
-      "ENV_NAME"                                 = var.env
-      "COMPONENT_NAME"                           = var.release["component"]
-      "VERSION"                                  = var.release["version"]
-    },
-    var.common_application_environment,
-    var.application_environment,
-    var.secrets,
-  )
+# nofile_soft_ulimit  = var.nofile_soft_ulimit
+
+  # container_env = merge(
+  #   {
+  #     "LOGSPOUT_CLOUDWATCHLOGS_LOG_GROUP_STDOUT" = "${local.full_service_name}-stdout"
+  #     "LOGSPOUT_CLOUDWATCHLOGS_LOG_GROUP_STDERR" = "${local.full_service_name}-stderr"
+  #     "STATSD_HOST"                              = "172.17.42.1"
+  #     "STATSD_PORT"                              = "8125"
+  #     "STATSD_ENABLED"                           = "true"
+  #     "ENV_NAME"                                 = var.env
+  #     "COMPONENT_NAME"                           = var.release["component"]
+  #     "VERSION"                                  = var.release["version"]
+  #   },
+  #   var.common_application_environment,
+  #   var.application_environment,
+  #   var.secrets,
+  # )
 
   labels = merge(
     {
