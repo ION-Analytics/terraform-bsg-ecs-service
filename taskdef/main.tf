@@ -9,16 +9,25 @@ locals {
   name_prefix = length(var.family) <= 32 ? var.family : format("%.24stf%.4s", var.family, sha1(var.family))
 }
 
-module "task_definition" {
-  source                = "./task_definition"
+resource "aws_ecs_task_definition" "taskdef" {
   family                = var.family
-  container_definition = var.container_definition
+  container_definitions = var.container_definition
   task_role_arn         = aws_iam_role.task_role.arn
   execution_role_arn    = aws_iam_role.ecs_tasks_execution_role.arn
   network_mode          = var.network_mode
-  volume                = var.volume
-  placement_constraint_on_demand_only = var.placement_constraint_on_demand_only
   tags                  = var.tags
+
+  volume {
+    name      = lookup(var.volume, "name", "dummy")
+    host_path = lookup(var.volume, "host_path", "/tmp/dummy_volume")
+  }
+  dynamic "placement_constraints" {
+    for_each = var.placement_constraint_on_demand_only == true ? [1] : []
+    content {
+        type       =  "memberOf"
+        expression = "attribute:lifecycle == on-demand" 
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "role_policy" {
