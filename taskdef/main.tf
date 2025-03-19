@@ -10,8 +10,7 @@ locals {
 }
 
 module "task_definition" {
-  source                = "mergermarket/ecs-task-definition/acuris"
-  version               = "2.3.0"
+  source                = "./task_definition"
   family                = var.family
   container_definitions = var.container_definitions
   task_role_arn         = aws_iam_role.task_role.arn
