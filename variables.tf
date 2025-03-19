@@ -226,7 +226,8 @@ variable "pack_and_distinct" {
 
 variable "stop_timeout" {
   description = "The duration is seconds to wait before the container is forcefully killed. Default 30s, max 120s."
-  default     = "none"
+  type        = number
+  default     = 120
 }
 
 variable "health_check_grace_period_seconds" {
