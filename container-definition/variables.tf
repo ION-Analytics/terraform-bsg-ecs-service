@@ -27,19 +27,19 @@ variable "platform_secrets" {
   default = []
 }
 
-variable "stop_timeout" {
-  description = "The duration is seconds to wait before the container is forcefully killed. Default 30s, max 120s."
-  default     = "none"
-}
+# variable "stop_timeout" {
+#   description = "The duration is seconds to wait before the container is forcefully killed. Default 30s, max 120s."
+#   default     = "none"
+# }
 
-variable "extra_hosts" {
-  description = "values to add to /etc/hosts in the container"
-  type = list(object({
-    hostname  = string
-    ipAddress = string
-  }))
-  default = []
-}
+# variable "extra_hosts" {
+#   description = "values to add to /etc/hosts in the container"
+#   type = list(object({
+#     hostname  = string
+#     ipAddress = string
+#   }))
+#   default = []
+# }
 
 
 # Originally at https://github.com/cloudposse/terraform-aws-ecs-container-definition/blob/main/variables.tf
@@ -204,17 +204,6 @@ variable "port_mappings" {
     appProtocol   = optional(string)
   }))
   description = "The port mappings to configure for the container. This is a list of maps. Each map should contain \"containerPort\", \"hostPort\", and \"protocol\", where \"protocol\" is one of \"tcp\" or \"udp\". If using containers in a task with the awsvpc or host network mode, the hostPort can either be left blank or set to the same value as the containerPort"
-  default     = null
-}
-
-# https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_MountPoint.html
-variable "mount_points" {
-  type = list(object({
-    containerPath = optional(string)
-    readOnly      = optional(bool)
-    sourceVolume  = optional(string)
-  }))
-  description = "Container mount points. This is a list of maps, where each map should contain `containerPath`, `sourceVolume` and `readOnly`"
   default     = null
 }
 
