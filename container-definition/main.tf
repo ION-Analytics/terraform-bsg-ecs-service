@@ -19,107 +19,105 @@ locals {
     }
   ]
 
-  final_secrets = flatten(flatten([local.sorted_application_secrets, local.sorted_platform_secrets]))
+  final_secrets = flatten([local.sorted_application_secrets, local.sorted_platform_secrets])
 
-  container_env = ""
+  # container_env = ""
 
-  container-def = jsonencode( {
-    name = var.name
-    essential = true
-    image = var.image
-    portMappings = var.port_mappings
-    cpu = var.cpu
-    privileged = var.privileged
-    memory = var.memory
-    stop_timeout = var.stop_timeout  
-    command = jsonencode(var.command)
-    environment = local.container_env
-    secrets = local.final_secrets
-    dockerLabels = jsonencode(var.labels)
-    ulimits = [
-      {
-        name = "nofile"
-        softLimit = var.nofile_soft_ulimit
-        hardLimit = 65535
-      }
-    ]
-    linuxParameters = {
-      initProcessEnabled = true
+  # Originally at: https://github.com/cloudposse/terraform-aws-ecs-container-definition/blob/main/main.tf
+  # Sort environment variables & secrets so terraform will not try to recreate on each plan/apply
+  env_as_map     = var.map_environment != null ? var.map_environment : var.environment != null ? { for m in var.environment : m.name => m.value } : null
+  secrets_as_map = var.map_secrets != null ? var.map_secrets : var.secrets != null ? { for m in var.secrets : m.name => m.valueFrom } : null
+
+  # https://www.terraform.io/docs/configuration/expressions.html#null
+  final_environment_vars = local.env_as_map != null ? [
+    for k, v in local.env_as_map :
+    {
+      name  = k
+      value = v
     }
-    extraHosts = local.extra_hosts
-  })
+  ] : null
+  final_secrets_vars = local.secrets_as_map != null ? [
+    for k, v in local.final_secrets :
+    {
+      name      = k
+      valueFrom = v
+    }
+  ] : null
+
+  log_configuration_without_null = var.log_configuration == null ? null : {
+    for k, v in var.log_configuration :
+    k => v
+    if v != null
+  }
+  user = var.firelens_configuration != null ? "0" : var.user
+
+  restart_policy_without_null = var.restart_policy == null ? null : {
+    for k, v in var.restart_policy :
+    k => v
+    if v != null
+  }
+
+    container_definition = {
+    name                   = var.container_name
+    image                  = var.container_image
+    essential              = var.essential
+    entryPoint             = var.entrypoint
+    command                = var.command
+    workingDirectory       = var.working_directory
+    readonlyRootFilesystem = var.readonly_root_filesystem
+    mountPoints            = var.mount_points
+    dnsServers             = var.dns_servers
+    dnsSearchDomains       = var.dns_search_domains
+    ulimits                = var.ulimits
+    repositoryCredentials  = var.repository_credentials
+    links                  = var.links
+    volumesFrom            = var.volumes_from
+    user                   = local.user
+    dependsOn              = var.container_depends_on
+    privileged             = var.privileged
+    portMappings           = var.port_mappings
+    healthCheck            = var.healthcheck
+    firelensConfiguration  = var.firelens_configuration
+    linuxParameters        = var.linux_parameters
+    logConfiguration       = local.log_configuration_without_null
+    memory                 = var.container_memory
+    memoryReservation      = var.container_memory_reservation
+    cpu                    = var.container_cpu
+    environment            = local.final_environment_vars
+    environmentFiles       = var.environment_files
+    secrets                = local.final_secrets_vars
+    dockerLabels           = var.docker_labels
+    startTimeout           = var.start_timeout
+    stopTimeout            = var.stop_timeout
+    systemControls         = var.system_controls
+    extraHosts             = var.extra_hosts
+    hostname               = var.hostname
+    disableNetworking      = var.disable_networking
+    interactive            = var.interactive
+    pseudoTerminal         = var.pseudo_terminal
+    dockerSecurityOptions  = var.docker_security_options
+    resourceRequirements   = var.resource_requirements
+    restartPolicy          = local.restart_policy_without_null
+    versionConsistency     = var.version_consistency
+  }
+
+
+  container_definition_without_null = {
+    for k, v in local.container_definition :
+    k => v
+    if v != null
+  }
+
+  container_definition_override_without_null = {
+    for k, v in var.container_definition :
+    k => v
+    if v != null
+  }
+
+  final_container_definition = merge(local.container_definition_without_null, local.container_definition_override_without_null)
+  json_map                   = jsonencode(local.final_container_definition)
 }
 
-output "final_secrets_debug" {
-  value = local.container-def
-}
-  # + final_secrets_debug = [
-  #     + {
-  #         + name      = "DUMMY_AWS_SECRET"
-  #         + valueFrom = "arn:aws:secretsmanager:us-west-2:254076036999:secret:capplatformbsg/sfrazer-test/bsg-hello-world-ecs-example/DUMMY_AWS_SECRET-3OG3jI"
-  #       },
-  #   ]
-
-    # Secrets target:
-    # + name      = "DUMMY_AWS_SECRET"
-    # + valueFrom = "arn:aws:secretsmanager:us-west-2:254076036999:secret:capplatformbsg/sfrazer-test/bsg-hello-world-ecs-example/DUMMY_AWS_SECRET-3OG3jI"
-
-
-
-
-
-
-
-# data "template_file" "container_definitions" {
-#   template = file("${path.module}/container_definition.json.tmpl")
-
-#   vars = {
-#     image                    = var.image
-#     container_name           = var.name
-#     port_mappings            = var.port_mappings == "" ? format("[ { \"containerPort\": %s } ]", var.container_port) : var.port_mappings
-#     cpu                      = var.cpu
-#     privileged               = var.privileged
-#     mem                      = var.memory    
-#     stop_timeout             = var.stop_timeout
-#     command                  = length(var.command) > 0 ? jsonencode(var.command) : "null"
-#     container_env            = data.external.encode_env.result["env"]
-#     # secrets                  = local.final_secrets
-#     labels                   = jsonencode(var.labels)
-#     nofile_soft_ulimit       = var.nofile_soft_ulimit
-#     mountpoint_sourceVolume  = lookup(var.mountpoint, "sourceVolume", "none")
-#     mountpoint_containerPath = lookup(var.mountpoint, "containerPath", "none")
-#     mountpoint_readOnly      = lookup(var.mountpoint, "readOnly", false)
-#     extra_hosts              = local.extra_hosts == "[]" ? "null" : local.extra_hosts
-#   }
-# }
-
-# data "external" "encode_env" {
-#   program = ["python", "${path.module}/encode_env.py"]
-
-#   query = {
-#     env      = jsonencode(var.container_env)
-#     metadata = jsonencode(var.metadata)
-#   }
-# }
-
-# data "external" "encode_secrets" {
-#   program = ["python", "${path.module}/encode_secrets.py"]
-
-#   query = {
-#     secrets = jsonencode(
-#       zipmap(
-#         var.application_secrets,
-#         data.aws_secretsmanager_secret.secret.*.arn,
-#       ),
-#     )
-#     common_secrets = jsonencode(
-#       zipmap(
-#         var.platform_secrets,
-#         data.aws_secretsmanager_secret.platform_secrets.*.arn,
-#       ),
-#     )
-#   }
-# }
 
 data "aws_secretsmanager_secret" "secret" {
   count = length(var.application_secrets)
