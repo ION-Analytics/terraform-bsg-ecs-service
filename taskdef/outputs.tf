@@ -1,5 +1,5 @@
 output "arn" {
-  value = module.task_definition.arn
+  value = aws_ecs_task_definition.taskdef.arn
 }
 
 output "task_role_arn" {
