@@ -154,7 +154,7 @@ resource "aws_cloudwatch_log_subscription_filter" "kinesis_log_stdout_stream" {
   destination_arn = var.platform_config["datadog_log_subscription_arn"]
   role_arn        = var.platform_config["datadog_log_subscription_role_arn"]
   log_group_name  = "${local.full_service_name}-stdout"
-  filter_pattern  = ""
+  filter_pattern  = var.log_subscription_filter
   depends_on      = [aws_cloudwatch_log_group.stdout]
 }
 
@@ -164,7 +164,7 @@ resource "aws_cloudwatch_log_subscription_filter" "kinesis_log_stderr_stream" {
   destination_arn = var.platform_config["datadog_log_subscription_arn"]
   role_arn        = var.platform_config["datadog_log_subscription_role_arn"]
   log_group_name  = "${local.full_service_name}-stderr"
-  filter_pattern  = ""
+  filter_pattern  = var.log_subscription_filter
   depends_on      = [aws_cloudwatch_log_group.stderr]
 }
 

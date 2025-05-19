@@ -151,6 +151,11 @@ variable "log_subscription_arn" {
   default     = ""
 }
 
+variable "log_subscription_filter" {
+  description = "Filter for firehose stream"
+  default     = " "
+}
+
 variable "allow_overnight_scaledown" {
   description = "Allow service to be scaled down"
   default     = true
