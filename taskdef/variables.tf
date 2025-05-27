@@ -58,3 +58,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "custom_secrets" {
+  description = "A list of custom secret paths"
+  type        = list(string)
+  default     = []
+}

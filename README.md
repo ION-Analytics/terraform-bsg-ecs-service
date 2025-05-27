@@ -1,15 +1,29 @@
-# terraform-acuris-ecs-service
-
-[![Test](https://github.com/mergermarket/terraform-acuris-ecs-service/actions/workflows/test.yml/badge.svg)](https://github.com/mergermarket/terraform-acuris-ecs-service/actions/workflows/test.yml)
+# terraform-iona-ecs-service
 
 An ECS service with an ALB target group, suitable for routing to from an ALB.
+
+This repo consolidates the following repos:
+* https://github.com/mergermarket/terraform-acuris-ecs-service
+* https://github.com/mergermarket/terraform-acuris-load-balanced-ecs-service-no-target-group
+* https://github.com/mergermarket/terraform-acuris-task-definition-with-task-role
+* https://github.com/mergermarket/terraform-acuris-ecs-container-definition
+
+The "ecs-service-no-target-group" used a series of "if-then" statements to determine which "type" of ecs service to create. Because this required some values to be known before the module ran, it was impossible to create the ecs service and the corresponding target group at the same time. To get around that, we use a new variable named service_type that can be one of the following values:
+* service
+* service_multiple_load_balancers
+* service_no_load_balancer
+* service_for_awsvpc_no_loadbalancer
+
+I've only ever used the first of these, so I'm unsire what the others are for, but they are included for completeness
+
+
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
-| Name                                                                      | Version |
-|---------------------------------------------------------------------------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 0.12 |
+| Name                                                                      | Version  |
+|---------------------------------------------------------------------------|----------|
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.7 |
 
 ## Providers
 
@@ -22,9 +36,6 @@ An ECS service with an ALB target group, suitable for routing to from an ALB.
 | Name                                                                                                                         | Source                                                        | Version |
 |------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------|---------|
 | <a name="module_ecs_update_monitor"></a> [ecs\_update\_monitor](#module\_ecs\_update\_monitor)                               | mergermarket/ecs-update-monitor/acuris                        | 2.3.5   |
-| <a name="module_service"></a> [service](#module\_service)                                                                    | mergermarket/load-balanced-ecs-service-no-target-group/acuris | 2.2.7   |
-| <a name="module_service_container_definition"></a> [service\_container\_definition](#module\_service\_container\_definition) | mergermarket/ecs-container-definition/acuris                  | 2.2.0   |
-| <a name="module_taskdef"></a> [taskdef](#module\_taskdef)                                                                    | mergermarket/task-definition-with-task-role/acuris            | 2.1.0   |
 
 ## Resources
 
@@ -77,6 +88,7 @@ An ECS service with an ALB target group, suitable for routing to from an ALB.
 | <a name="input_pack_and_distinct"></a> [pack\_and\_distinct](#input\_pack\_and\_distinct)                                                               | Enable distinct instance and task binpacking for better cluster utilisation. Enter 'true' for clusters with auto scaling groups. Enter 'false' for clusters with no ASG and instant counts less than or equal to desired tasks                | `string`                                                | `"false"`                                                                                                                                                                                |    no    |
 | <a name="input_platform_config"></a> [platform\_config](#input\_platform\_config)                                                                       | Platform configuration                                                                                                                                                                                                                        | `map(string)`                                           | `{}`                                                                                                                                                                                     |    no    |
 | <a name="input_platform_secrets"></a> [platform\_secrets](#input\_platform\_secrets)                                                                    | A list of common secret names for "the platform" that can be found in secrets manager                                                                                                                                                         | `list(string)`                                          | `[]`                                                                                                                                                                                     |    no    |
+| <a name="input_custom_secrets"></a> [custom\_secrets](#input\_custom\_secrets)                                                                    | A list of secret names that can be referenced by multiple services                                                                                                                                                        | `list(string)`                                          | `[]`                                                                                                                                                                                     |    no    |
 | <a name="input_port"></a> [port](#input\_port)                                                                                                          | The port that container will be running on                                                                                                                                                                                                    | `string`                                                | n/a                                                                                                                                                                                      |   yes    |
 | <a name="input_privileged"></a> [privileged](#input\_privileged)                                                                                        | Gives the container privileged access to the host                                                                                                                                                                                             | `bool`                                                  | `false`                                                                                                                                                                                  |    no    |
 | <a name="input_release"></a> [release](#input\_release)                                                                                                 | Metadata about the release                                                                                                                                                                                                                    | `map(string)`                                           | n/a                                                                                                                                                                                      |   yes    |

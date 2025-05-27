@@ -1,6 +1,7 @@
-# output "rendered" {
-#   value = local.container-def
-# }
+## Original output format and name
+output "rendered" {
+  value = "[${local.json_map}]"
+}
 
 # Originally at https://github.com/cloudposse/terraform-aws-ecs-container-definition/blob/main/outputs.tf
 

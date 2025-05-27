@@ -1,62 +1,75 @@
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+    }
+  }
+}
+
 locals {
   service_name      = "${var.env}-${var.release["component"]}"
   full_service_name = "${local.service_name}${var.name_suffix}"
 
   tags = merge({
-     "component"              = var.release["component"]
-      "env"                   = terraform.workspace
-      "team"                  = var.release["team"]
-      "version"               = var.release["version"]
+    "component" = var.release["component"]
+    "env"       = terraform.workspace
+    "team"      = var.release["team"]
+    "version"   = var.release["version"]
   })
 }
 
-module "ecs_update_monitor" {
-  source  = "mergermarket/ecs-update-monitor/acuris"
-  version = "2.3.5"
+module "service_container_definition" {
+  source = "./container-definition"
 
-  cluster = var.ecs_cluster
-  service = module.service.name
-  taskdef = module.taskdef.arn
-  is_test = var.is_test
-  timeout = var.deployment_timeout
-}
+  container_name      = "${var.release["component"]}${var.name_suffix}"
+  container_image     = var.image_id != "" ? var.image_id : var.release["image_id"]
+  container_cpu       = var.cpu
+  privileged          = var.privileged
+  container_memory    = var.memory
+  stop_timeout        = tonumber(var.stop_timeout)
+  application_secrets = var.application_secrets
+  platform_secrets    = var.platform_secrets
+  custom_secrets      = var.custom_secrets
+  platform_config     = var.platform_config
+  port_mappings       = [{ containerPort = var.port }]
+  mount_points        = [var.container_mountpoint]
+  ulimits = [{
+    name      = "nofile"
+    hardLimit = 65535
+    softLimit = var.nofile_soft_ulimit
+  }]
+  log_configuration   = var.log_configuration
+  
 
-locals {
-  p = var.spot_capacity_percentage <= 50 ? var.spot_capacity_percentage : 100 - var.spot_capacity_percentage
-  lower_weight = ceil(local.p / 100)
-  higher_weight = local.lower_weight == 0 ? 1 : (floor(local.lower_weight / (local.p / 100)) - local.lower_weight)
-  spot_weight = var.spot_capacity_percentage <= 50 ? local.lower_weight : local.higher_weight
-  ondemand_weight = var.spot_capacity_percentage <= 50 ? local.higher_weight : local.lower_weight
-  use_graviton = try (var.image_build_details["buildx"] == "true" && length(regexall("arm64", var.image_build_details["platforms"])) > 0 , false)
-
-  capacity_providers = local.use_graviton ? [
-    {
-      capacity_provider = "${var.ecs_cluster}-native-scaling-graviton"
-      weight            = local.ondemand_weight
+  map_environment = merge({
+    "LOGSPOUT_CLOUDWATCHLOGS_LOG_GROUP_STDOUT" = "${local.full_service_name}-stdout"
+    "LOGSPOUT_CLOUDWATCHLOGS_LOG_GROUP_STDERR" = "${local.full_service_name}-stderr"
+    "STATSD_HOST"                              = "172.17.42.1"
+    "STATSD_PORT"                              = "8125"
+    "STATSD_ENABLED"                           = "true"
+    "ENV_NAME"                                 = var.env
+    "COMPONENT_NAME"                           = var.release["component"]
+    "VERSION"                                  = var.release["version"]
     },
+    var.common_application_environment,
+    var.application_environment,
+    var.secrets,
+  )
+  docker_labels = merge(
     {
-      capacity_provider = "${var.ecs_cluster}-native-scaling-graviton-spot" 
-      weight            = local.spot_weight
-    }
-  ] : [
-    {
-      capacity_provider = "${var.ecs_cluster}-native-scaling"
-      weight            = local.ondemand_weight
+      "component"             = var.release["component"]
+      "env"                   = var.env
+      "team"                  = var.release["team"]
+      "version"               = var.release["version"]
+      "com.datadoghq.ad.logs" = "[{\"source\": \"amazon_ecs\", \"service\": \"${local.full_service_name}\"}]"
     },
-    {
-      capacity_provider = "${var.ecs_cluster}-native-scaling-spot" 
-      weight            = local.spot_weight
-    }
-  ]
-}
-
-output "capacity_providers" {
-  value = local.capacity_providers
+    var.container_labels,
+  )
+  extra_hosts = var.extra_hosts
 }
 
 module "service" {
-  source  = "ION-Analytics/load-balanced-ecs-service-no-target-group/bsg"
-  version = "2.6.2"
+  source = "./service"
 
   name                                  = local.full_service_name
   cluster                               = var.ecs_cluster
@@ -77,70 +90,60 @@ module "service" {
 }
 
 module "taskdef" {
-  source  = "./taskdef"
+  source = "./taskdef"
 
-  family                = local.full_service_name
-  container_definition  = module.service_container_definition.sensitive_json_map_encoded_list
-  policy                = var.task_role_policy
-  assume_role_policy    = var.assume_role_policy
-  volume                = var.taskdef_volume
-  env                   = var.env
-  release               = var.release
-  network_mode          = var.network_mode
-  is_test               = var.is_test
+  family                              = local.full_service_name
+  container_definition                = module.service_container_definition.json_map_encoded_list
+  policy                              = var.task_role_policy
+  assume_role_policy                  = var.assume_role_policy
+  volume                              = var.taskdef_volume
+  env                                 = var.env
+  release                             = var.release
+  network_mode                        = var.network_mode
+  is_test                             = var.is_test
   placement_constraint_on_demand_only = var.placement_constraint_on_demand_only
-  tags                  = local.tags
+  tags                                = local.tags
+  custom_secrets                      = var.custom_secrets
 }
 
-# output "final_secrets_debug" {
-#   value = module.service_container_definition.final_secrets_debug
-# }
+module "ecs_update_monitor" {
+  source  = "mergermarket/ecs-update-monitor/acuris"
+  version = "2.3.5"
 
-module "service_container_definition" {
-  source  = "./container-definition"
+  cluster = var.ecs_cluster
+  service = module.service.name
+  taskdef = module.taskdef.arn
+  is_test = var.is_test
+  timeout = var.deployment_timeout
+}
 
-  container_name                = "${var.release["component"]}${var.name_suffix}"
-  container_image               = var.image_id != "" ? var.image_id : var.release["image_id"]
-  container_cpu                 = var.cpu
-  privileged          = var.privileged
-  container_memory              = var.memory
-  stop_timeout        = var.stop_timeout
-  # container_port      = var.port
-#  mountpoint          = var.container_mountpoint
-#  port_mappings       = var.container_port_mappings
-  application_secrets = var.application_secrets
-  platform_secrets    = var.platform_secrets
-  platform_config     = var.platform_config
+locals {
+  p               = var.spot_capacity_percentage <= 50 ? var.spot_capacity_percentage : 100 - var.spot_capacity_percentage
+  lower_weight    = ceil(local.p / 100)
+  higher_weight   = local.lower_weight == 0 ? 1 : (floor(local.lower_weight / (local.p / 100)) - local.lower_weight)
+  spot_weight     = var.spot_capacity_percentage <= 50 ? local.lower_weight : local.higher_weight
+  ondemand_weight = var.spot_capacity_percentage <= 50 ? local.higher_weight : local.lower_weight
+  use_graviton    = try(var.image_build_details["buildx"] == "true" && length(regexall("arm64", var.image_build_details["platforms"])) > 0, false)
 
-# nofile_soft_ulimit  = var.nofile_soft_ulimit
-
-  # container_env = merge(
-  #   {
-  #     "LOGSPOUT_CLOUDWATCHLOGS_LOG_GROUP_STDOUT" = "${local.full_service_name}-stdout"
-  #     "LOGSPOUT_CLOUDWATCHLOGS_LOG_GROUP_STDERR" = "${local.full_service_name}-stderr"
-  #     "STATSD_HOST"                              = "172.17.42.1"
-  #     "STATSD_PORT"                              = "8125"
-  #     "STATSD_ENABLED"                           = "true"
-  #     "ENV_NAME"                                 = var.env
-  #     "COMPONENT_NAME"                           = var.release["component"]
-  #     "VERSION"                                  = var.release["version"]
-  #   },
-  #   var.common_application_environment,
-  #   var.application_environment,
-  #   var.secrets,
-  # )
-
-  labels = merge(
+  capacity_providers = local.use_graviton ? [
     {
-      "component"             = var.release["component"]
-      "env"                   = var.env
-      "team"                  = var.release["team"]
-      "version"               = var.release["version"]
-      "com.datadoghq.ad.logs" = "[{\"source\": \"amazon_ecs\", \"service\": \"${local.full_service_name}\"}]"
+      capacity_provider = "${var.ecs_cluster}-native-scaling-graviton"
+      weight            = local.ondemand_weight
     },
-    var.container_labels,
-  )
-  extra_hosts = var.extra_hosts
+    {
+      capacity_provider = "${var.ecs_cluster}-native-scaling-graviton-spot"
+      weight            = local.spot_weight
+    }
+    ] : [
+    {
+      capacity_provider = "${var.ecs_cluster}-native-scaling"
+      weight            = local.ondemand_weight
+    },
+    {
+      capacity_provider = "${var.ecs_cluster}-native-scaling-spot"
+      weight            = local.spot_weight
+    }
+  ]
 }
 
 resource "aws_cloudwatch_log_group" "stdout" {
@@ -158,15 +161,17 @@ resource "aws_cloudwatch_log_subscription_filter" "kinesis_log_stdout_stream" {
   name            = "kinesis-log-stdout-stream-${local.service_name}"
   destination_arn = var.platform_config["datadog_log_subscription_arn"]
   log_group_name  = "${local.full_service_name}-stdout"
+  role_arn        = var.platform_config["datadog_log_subscription_role_arn"]
   filter_pattern  = ""
   depends_on      = [aws_cloudwatch_log_group.stdout]
 }
 
 resource "aws_cloudwatch_log_subscription_filter" "kinesis_log_stderr_stream" {
   count           = var.platform_config["datadog_log_subscription_arn"] != "" && var.add_datadog_feed ? 1 : 0
-  name            = "kinesis-log-stdout-stream-${local.service_name}"
+  name            = "kinesis-log-stderr-stream-${local.service_name}"
   destination_arn = var.platform_config["datadog_log_subscription_arn"]
   log_group_name  = "${local.full_service_name}-stderr"
+  role_arn        = var.platform_config["datadog_log_subscription_role_arn"]
   filter_pattern  = ""
   depends_on      = [aws_cloudwatch_log_group.stderr]
 }

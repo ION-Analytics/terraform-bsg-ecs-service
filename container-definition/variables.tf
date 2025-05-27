@@ -1,3 +1,5 @@
+## ION-Specific variable definitions
+## These were added during the copy/paste
 
 variable "labels" {
   description = "Labels to be applied to the docker container"
@@ -27,173 +29,67 @@ variable "platform_secrets" {
   default = []
 }
 
-# variable "stop_timeout" {
-#   description = "The duration is seconds to wait before the container is forcefully killed. Default 30s, max 120s."
-#   default     = "none"
-# }
+# Attempt at doing a custom secrets path
+# In this case, the string would be a full secret name, with the 
+# ENV variable being the last part of the name
+# i.e. odo-us/shared/DB_PASSWORD would set ENV: 
+# DB_PASSWORD = {secret_value}
 
-# variable "extra_hosts" {
-#   description = "values to add to /etc/hosts in the container"
-#   type = list(object({
-#     hostname  = string
-#     ipAddress = string
-#   }))
-#   default = []
-# }
+variable "custom_secrets" {
+  type    = list(string)
+  default = []
+}
 
+## Variables defined by the source module this was cribbed from:
+## I'll note where the name doesn't fit with our current ecs-service module
 
 # Originally at https://github.com/cloudposse/terraform-aws-ecs-container-definition/blob/main/variables.tf
 
+## We currently use 'labels'
+variable "docker_labels" {
+  type        = map(string)
+  description = "The configuration options to send to the `docker_labels`"
+  default     = null
+}
+
+## We currently use 'name'
 variable "container_name" {
   type        = string
   description = "The name of the container. Up to 255 characters ([a-z], [A-Z], [0-9], -, _ allowed)"
 }
 
+## We currently use 'image'
 variable "container_image" {
   type        = string
   description = "The image used to start the container. Images in the Docker Hub registry available by default"
 }
 
+## We currently use 'memory'
 variable "container_memory" {
   type        = number
   description = "The amount of memory (in MiB) to allow the container to use. This is a hard limit, if the container attempts to exceed the container_memory, the container is killed. This field is optional for Fargate launch type and the total amount of container_memory of all containers in a task will need to be lower than the task memory value"
   default     = null
 }
 
-variable "container_memory_reservation" {
+## We currently use 'cpu'
+variable "container_cpu" {
   type        = number
-  description = "The amount of memory (in MiB) to reserve for the container. If container needs to exceed this threshold, it can do so up to the set container_memory hard limit"
+  description = "The number of cpu units to reserve for the container. This is optional for tasks using Fargate launch type and the total amount of container_cpu of all containers in a task will need to be lower than the task-level cpu value"
+  default     = 0
+}
+
+## We currently use 'container_env'
+## but the formation is exactly the same
+variable "map_environment" {
+  type        = map(string)
+  description = "The environment variables to pass to the container. This is a map of string: {key: value}. map_environment overrides environment"
   default     = null
 }
 
-# https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerDefinition.html
-variable "container_definition" {
-  type = object({
-    command                  = optional(list(string))
-    cpu                      = optional(number)
-    dependsOn                = optional(list(object({
-      condition                = string
-      containerName            = string
-    })))    
-    disableNetworking        = optional(bool)
-    dnsSearchDomains         = optional(list(string))
-    dnsServers               = optional(list(string))
-    dockerLabels             = optional(map(string))
-    dockerSecurityOptions    = optional(list(string))
-    entryPoint               = optional(list(string))
-    environment              = optional(list(object({
-      name                     = string
-      value                    = string
-    })))    
-    environmentFiles         = optional(list(object({
-      type                     = string
-      value                    = string
-    })))    
-    essential                = optional(bool)
-    extraHosts               = optional(list(object({
-      hostname                 = string
-      ipAddress                = string
-    })))    
-    firelensConfiguration    = optional(object({
-      options                  = optional(map(string))
-      type                     = string
-    }))   
-    healthCheck              = optional(object({
-      command                  = list(string)
-      interval                 = optional(number)
-      retries                  = optional(number)
-      startPeriod              = optional(number)
-      timeout                  = optional(number)
-    }))             
-    hostname                 = optional(string)
-    image                    = optional(string)
-    interactive              = optional(bool)
-    links                    = optional(list(string))
-    linuxParameters          = optional(object({
-      capabilities             = optional(object({
-        add                      = optional(list(string))
-        drop                     = optional(list(string))
-      }))   
-      devices                = optional(list(object({
-        containerPath          = string
-        hostPath               = string
-        permissions            = optional(list(string))
-      })))    
-      initProcessEnabled     = optional(bool)
-      maxSwap                = optional(number)
-      sharedMemorySize       = optional(number)
-      swappiness             = optional(number)
-      tmpfs                  = optional(list(object({
-        containerPath          = string
-        mountOptions           = optional(list(string))
-        size                   = number
-      })))    
-    }))   
-    logConfiguration         = optional(object({
-      logDriver                = string
-      options                  = optional(map(string))
-      secretOptions            = optional(list(object({
-        name                     = string
-        valueFrom                = string
-      })))    
-    }))   
-    memory                   = optional(number)
-    memoryReservation        = optional(number)
-    mountPoints              = optional(list(object({
-      containerPath            = optional(string)
-      readOnly                 = optional(bool)
-      sourceVolume             = optional(string)
-    })))    
-    name                     = optional(string)
-    portMappings             = optional(list(object({
-      containerPort            = number
-      hostPort                 = optional(number)
-      protocol                 = optional(string)
-      name                     = optional(string)
-      appProtocol              = optional(string)
-    })))    
-    privileged                = optional(bool)
-    pseudoTerminal            = optional(bool)
-    readonlyRootFilesystem    = optional(bool)
-    repositoryCredentials     = optional(object({
-      credentialsParameter      = string
-    }))
-    resourceRequirements      = optional(list(object({
-      type                      = string
-      value                     = string
-    })))
-    restartPolicy             = optional(object({
-      enabled                   = bool
-      ignoredExitCodes          = optional(list(number))
-      restartAttemptPeriod      = optional(number)
-    }))
-    secrets                   = optional(list(object({
-      name                      = string
-      valueFrom                 = string
-    })))
-    startTimeout              = optional(number)
-    stopTimeout               = optional(number)
-    systemControls            = optional(list(object({
-      namespace                 = string
-      value                     = string
-    })))
-    ulimits                   = optional(list(object({
-      hardLimit                 = number
-      name                      = string
-      softLimit                 = number
-    })))
-    user                      = optional(string)
-    versionConsistency        = optional(string)
-    volumesFrom               = optional(list(object({
-      readOnly                  = optional(bool)
-      sourceContainer           = string
-    })))
-    workingDirectory          = optional(string)
-  })
-  description               = "Container definition overrides which allows for extra keys or overriding existing keys."
-  default                   = {}
-}
-
+## Our current port_mappings comes in as a single port
+## converting the current to the new form can be done at
+## module call:
+## port_mappings       = [{containerPort = var.port }]
 # https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_PortMapping.html
 variable "port_mappings" {
   type = list(object({
@@ -207,6 +103,56 @@ variable "port_mappings" {
   default     = null
 }
 
+## We currently use 'mountpoint'
+## Similar to port_mappings, this is currently not a list
+## Conversion can be done at module call like so:
+## mount_points        = [ var.container_mountpoint ]
+# https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_MountPoint.html
+variable "mount_points" {
+  type = list(object({
+    containerPath = optional(string)
+    readOnly      = optional(bool)
+    sourceVolume  = optional(string)
+  }))
+  description = "Container mount points. This is a list of maps, where each map should contain `containerPath`, `sourceVolume` and `readOnly`"
+  default     = null
+}
+
+
+## name is the same, but I don't know if the type collides
+# https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_HostEntry.html
+variable "extra_hosts" {
+  type = list(object({
+    hostname  = string
+    ipAddress = string
+  }))
+  description = "A list of hostnames and IP address mappings to append to the /etc/hosts file on the container. This is a list of maps"
+  default     = null
+}
+
+## We currently use 'nofile_soft_ulimit' and set only a single value
+## This can be converted in the module call like so:
+## ulimits = [{ 
+##             name = "nofile"
+##             hardLimit = 65535
+##             softLimit = var.nofile_soft_ulimit
+##           }]
+# https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Ulimit.html
+variable "ulimits" {
+  type = list(object({
+    hardLimit = number
+    name      = string
+    softLimit = number
+  }))
+  description = "Container ulimit settings. This is a list of maps, where each map should contain \"name\", \"hardLimit\" and \"softLimit\""
+  default     = null
+}
+
+## BEYOND THIS POINT
+## all variables are new, meaning they are not covered in the current
+## template. Because they all default to null and all nulls are removed
+## not specifying these values will not cause a change in the template
+
 # https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_HealthCheck.html
 variable "healthcheck" {
   type = object({
@@ -218,12 +164,6 @@ variable "healthcheck" {
   })
   description = "A map containing command (string), timeout, interval (duration in seconds), retries (1-10, number of times to retry before marking container unhealthy), and startPeriod (0-300, optional grace period to wait, in seconds, before failed healthchecks count toward retries)"
   default     = null
-}
-
-variable "container_cpu" {
-  type        = number
-  description = "The number of cpu units to reserve for the container. This is optional for tasks using Fargate launch type and the total amount of container_cpu of all containers in a task will need to be lower than the task-level cpu value"
-  default     = 0
 }
 
 variable "essential" {
@@ -259,28 +199,6 @@ variable "environment" {
   default     = null
 }
 
-# https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_HostEntry.html
-variable "extra_hosts" {
-  type = list(object({
-    hostname  = string
-    ipAddress = string
-  }))
-  description = "A list of hostnames and IP address mappings to append to the /etc/hosts file on the container. This is a list of maps"
-  default     = null
-}
-
-variable "map_environment" {
-  type        = map(string)
-  description = "The environment variables to pass to the container. This is a map of string: {key: value}. map_environment overrides environment"
-  default     = null
-}
-
-variable "map_secrets" {
-  type        = map(string)
-  description = "The secrets variables to pass to the container. This is a map of string: {key: value}. map_secrets overrides secrets"
-  default     = null
-}
-
 # https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_EnvironmentFile.html
 variable "environment_files" {
   type = list(object({
@@ -288,16 +206,6 @@ variable "environment_files" {
     value = string
   }))
   description = "One or more files containing the environment variables to pass to the container. This maps to the --env-file option to docker run. The file must be hosted in Amazon S3. This option is only available to tasks using the EC2 launch type. This is a list of maps"
-  default     = null
-}
-
-# https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Secret.html
-variable "secrets" {
-  type = list(object({
-    name      = string
-    valueFrom = string
-  }))
-  description = "The secrets to pass to the container. This is a list of maps"
   default     = null
 }
 
@@ -357,17 +265,6 @@ variable "firelens_configuration" {
   default     = null
 }
 
-# https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_MountPoint.html
-variable "mount_points" {
-  type = list(object({
-    containerPath = optional(string)
-    readOnly      = optional(bool)
-    sourceVolume  = optional(string)
-  }))
-  description = "Container mount points. This is a list of maps, where each map should contain `containerPath`, `sourceVolume` and `readOnly`"
-  default     = null
-}
-
 variable "dns_servers" {
   type        = list(string)
   description = "Container DNS servers. This is a list of strings specifying the IP addresses of the DNS servers"
@@ -377,17 +274,6 @@ variable "dns_servers" {
 variable "dns_search_domains" {
   type        = list(string)
   description = "Container DNS search domains. A list of DNS search domains that are presented to the container"
-  default     = null
-}
-
-# https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_Ulimit.html
-variable "ulimits" {
-  type = list(object({
-    hardLimit = number
-    name      = string
-    softLimit = number
-  }))
-  description = "Container ulimit settings. This is a list of maps, where each map should contain \"name\", \"hardLimit\" and \"softLimit\""
   default     = null
 }
 
@@ -429,12 +315,6 @@ variable "container_depends_on" {
     containerName = string
   }))
   description = "The dependencies defined for container startup and shutdown. A container can contain multiple dependencies. When a dependency is defined for container startup, for container shutdown it is reversed. The condition can be one of START, COMPLETE, SUCCESS or HEALTHY"
-  default     = null
-}
-
-variable "docker_labels" {
-  type        = map(string)
-  description = "The configuration options to send to the `docker_labels`"
   default     = null
 }
 
@@ -521,4 +401,138 @@ variable "version_consistency" {
   type        = string
   description = "Specifies whether Amazon ECS will resolve the container image tag provided in the container definition to an image digest."
   default     = null
+}
+
+variable "container_memory_reservation" {
+  type        = number
+  description = "The amount of memory (in MiB) to reserve for the container. If container needs to exceed this threshold, it can do so up to the set container_memory hard limit"
+  default     = null
+}
+
+# https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerDefinition.html
+variable "container_definition" {
+  type = object({
+    command = optional(list(string))
+    cpu     = optional(number)
+    dependsOn = optional(list(object({
+      condition     = string
+      containerName = string
+    })))
+    disableNetworking     = optional(bool)
+    dnsSearchDomains      = optional(list(string))
+    dnsServers            = optional(list(string))
+    dockerLabels          = optional(map(string))
+    dockerSecurityOptions = optional(list(string))
+    entryPoint            = optional(list(string))
+    environment = optional(list(object({
+      name  = string
+      value = string
+    })))
+    environmentFiles = optional(list(object({
+      type  = string
+      value = string
+    })))
+    essential = optional(bool)
+    extraHosts = optional(list(object({
+      hostname  = string
+      ipAddress = string
+    })))
+    firelensConfiguration = optional(object({
+      options = optional(map(string))
+      type    = string
+    }))
+    healthCheck = optional(object({
+      command     = list(string)
+      interval    = optional(number)
+      retries     = optional(number)
+      startPeriod = optional(number)
+      timeout     = optional(number)
+    }))
+    hostname    = optional(string)
+    image       = optional(string)
+    interactive = optional(bool)
+    links       = optional(list(string))
+    linuxParameters = optional(object({
+      capabilities = optional(object({
+        add  = optional(list(string))
+        drop = optional(list(string))
+      }))
+      devices = optional(list(object({
+        containerPath = string
+        hostPath      = string
+        permissions   = optional(list(string))
+      })))
+      initProcessEnabled = optional(bool)
+      maxSwap            = optional(number)
+      sharedMemorySize   = optional(number)
+      swappiness         = optional(number)
+      tmpfs = optional(list(object({
+        containerPath = string
+        mountOptions  = optional(list(string))
+        size          = number
+      })))
+    }))
+    logConfiguration = optional(object({
+      logDriver = string
+      options   = optional(map(string))
+      secretOptions = optional(list(object({
+        name      = string
+        valueFrom = string
+      })))
+    }))
+    memory            = optional(number)
+    memoryReservation = optional(number)
+    mountPoints = optional(list(object({
+      containerPath = optional(string)
+      readOnly      = optional(bool)
+      sourceVolume  = optional(string)
+    })))
+    name = optional(string)
+    portMappings = optional(list(object({
+      containerPort = number
+      hostPort      = optional(number)
+      protocol      = optional(string)
+      name          = optional(string)
+      appProtocol   = optional(string)
+    })))
+    privileged             = optional(bool)
+    pseudoTerminal         = optional(bool)
+    readonlyRootFilesystem = optional(bool)
+    repositoryCredentials = optional(object({
+      credentialsParameter = string
+    }))
+    resourceRequirements = optional(list(object({
+      type  = string
+      value = string
+    })))
+    restartPolicy = optional(object({
+      enabled              = bool
+      ignoredExitCodes     = optional(list(number))
+      restartAttemptPeriod = optional(number)
+    }))
+    secrets = optional(list(object({
+      name      = string
+      valueFrom = string
+    })))
+    startTimeout = optional(number)
+    stopTimeout  = optional(number)
+    systemControls = optional(list(object({
+      namespace = string
+      value     = string
+    })))
+    ulimits = optional(list(object({
+      hardLimit = number
+      name      = string
+      softLimit = number
+    })))
+    user               = optional(string)
+    versionConsistency = optional(string)
+    volumesFrom = optional(list(object({
+      readOnly        = optional(bool)
+      sourceContainer = string
+    })))
+    workingDirectory = optional(string)
+  })
+  description = "Container definition overrides which allows for extra keys or overriding existing keys."
+  default     = {}
 }

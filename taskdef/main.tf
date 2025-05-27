@@ -24,8 +24,8 @@ resource "aws_ecs_task_definition" "taskdef" {
   dynamic "placement_constraints" {
     for_each = var.placement_constraint_on_demand_only == true ? [1] : []
     content {
-        type       =  "memberOf"
-        expression = "attribute:lifecycle == on-demand" 
+      type       = "memberOf"
+      expression = "attribute:lifecycle == on-demand"
     }
   }
 }
@@ -90,49 +90,54 @@ data "aws_caller_identity" "current" {
 data "aws_region" "current" {
 }
 
+data "aws_iam_policy_document" "execution-role-policy" {
+  statement {
+    actions = [
+      "ecr:GetAuthorizationToken",
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:BatchGetImage",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+    resources = [ "*" ]
+  }
+
+  statement {
+    actions = [
+      "secretsmanager:List*",
+      "secretsmanager:DescribeSecret",
+    ]
+    resources = [ "*" ]
+  }
+
+  statement {
+    actions =[
+      "secretsmanager:GetSecretValue"
+    ]
+    resources = [ "arn:aws:secretsmanager:${data.aws_region.current.name}:${local.account_id}:secret:platform_secrets/*" ]
+  }
+
+  statement {
+    actions =[
+      "secretsmanager:GetSecretValue"
+    ]
+    resources = [ "arn:aws:secretsmanager:${data.aws_region.current.name}:${local.account_id}:secret:${local.team}/${var.env}/${local.component}/*" ]
+  }
+
+  dynamic "statement" {
+    for_each = var.custom_secrets
+    content {
+      actions = [
+        "secretsmanager:GetSecretValue"
+      ]
+      resources = [ "arn:aws:secretsmanager:${data.aws_region.current.name}:${local.account_id}:secret:${statement.value}-*"]
+    }
+  }
+}
+
 resource "aws_iam_role_policy" "execution_role_policy" {
   role = aws_iam_role.ecs_tasks_execution_role.id
   name = "role_policy"
-
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-      {
-          "Effect": "Allow",
-          "Action": [
-              "ecr:GetAuthorizationToken",
-              "ecr:BatchCheckLayerAvailability",
-              "ecr:GetDownloadUrlForLayer",
-              "ecr:BatchGetImage",
-              "logs:CreateLogStream",
-              "logs:PutLogEvents"
-          ],
-          "Resource": "*"
-      },
-      {
-          "Sid": "",
-          "Effect": "Allow",
-          "Action": [
-              "secretsmanager:List*",
-              "secretsmanager:DescribeSecret"
-          ],
-          "Resource": "*"
-      },
-      {
-          "Sid": "",
-          "Effect": "Allow",
-          "Action": "secretsmanager:GetSecretValue",
-          "Resource": "arn:aws:secretsmanager:${data.aws_region.current.name}:${local.account_id}:secret:platform_secrets/*"
-      },
-      {
-          "Sid": "",
-          "Effect": "Allow",
-          "Action": "secretsmanager:GetSecretValue",
-          "Resource": "arn:aws:secretsmanager:${data.aws_region.current.name}:${local.account_id}:secret:${local.team}/${var.env}/${local.component}/*"
-      }
-    ]
-}
-EOF
-
+  policy = data.aws_iam_policy_document.execution-role-policy.json
 }

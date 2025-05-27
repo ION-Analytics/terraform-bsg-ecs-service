@@ -91,7 +91,6 @@ variable "multiple_target_group_arns" {
 variable "task_role_policy" {
   description = "IAM policy document to apply to the tasks via a task role"
   type        = string
-
   default = <<END
 {
   "Version": "2012-10-17",
@@ -183,6 +182,12 @@ variable "platform_secrets" {
   default     = []
 }
 
+variable "custom_secrets" {
+  description = "A list of arbitrary secret names that can be found in secrets manager"
+  type        = list(string)
+  default     = []
+}
+
 variable "is_test" {
   description = "For testing only. Stops the call to AWS for sts"
   default     = false
@@ -226,8 +231,8 @@ variable "pack_and_distinct" {
 
 variable "stop_timeout" {
   description = "The duration is seconds to wait before the container is forcefully killed. Default 30s, max 120s."
-  type        = number
-  default     = 120
+  type        = string
+  default     = "120"
 }
 
 variable "health_check_grace_period_seconds" {
@@ -266,14 +271,29 @@ variable "extra_hosts" {
 variable "image_build_details" {
   description = "Details of the image build"
   type        = map(string)
-  default     = {
-    "buildx" = "false",
+  default = {
+    "buildx"    = "false",
     "platforms" = ""
   }
 }
 
 variable "spot_capacity_percentage" {
-  default = 33
-  type = number
+  default     = 33
+  type        = number
   description = "Percentage of tasks to run on spot instances"
 }
+
+# https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_LogConfiguration.html
+variable "log_configuration" {
+  type = object({
+    logDriver = string
+    options   = optional(map(string))
+    secretOptions = optional(list(object({
+      name      = string
+      valueFrom = string
+    })))
+  })
+  description = "Log configuration options to send to a custom log driver for the container. For more details, see https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_LogConfiguration.html"
+  default     = null
+}
+
